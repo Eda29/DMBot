@@ -3,48 +3,40 @@
 #Creation Date: Dec. 2, 2022
 #purpose: The entry point to the bot application.
 #Last Edited by: Donovan Tyler
-#Last Edit Time: Dec. 2, 2022 @ 20:09 EST
+#Last Edit Time: Dec. 3, 2022 @ 13:38 EST
 
 import os
 import random
 import discord
-import commands
+import itertools
 
 from dotenv import load_dotenv
-
-from discord.ext import commands
+from discord import option
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
-intents = discord.Intents(messages = True, guilds = True, reactions = True, members = True, presences = True)
-bot = commands.Bot(command_prefix="!", intents=intents)
-
+bot = discord.Bot()
 
 @bot.event
 async def on_ready():
-    #boilerplate debugging code
-    for guild in bot.guilds:
-        if guild.name == GUILD:
-            break
+    print(f'Logged in as {bot.user}')
 
-    print(
-        f'{bot.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})'
-    )
+@bot.slash_command(name='roll', guild_id=1048352661130461304)
+@option("numDice", description="The number of dice you wish to roll.")
+@option("diceFace", description="The type of die you wish to roll. Acceptable answers are 4, 6, 8, 10, 12, 20, 100")
+async def roll(ctx, numDice: int, diceFace: int):
+    faceTuple = {4, 6, 8, 10, 12, 20, 100}
+    if diceFace not in faceTuple:
+        await ctx.respond("The type of die must be of values: 4, 6, 8, 10, 12, 20, or 100")
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
+    totalValue = 0
 
-#this may not throw, we do not know. this depends on commands.
-async def on_error(event, *args, **kwargs):
-    with open('err.log', 'a') as f:
-        if event == 'on_message':
-            f.write(f'Unhandled message: {args[0]}\n')
-        else:
-            raise
+    for val in itertools.repeat(None, numDice):
+        dieValue = random.randint(1, diceFace)
+        totalValue = totalValue + dieValue
+
+    await ctx.respond(totalValue)
 
 bot.run(TOKEN)
